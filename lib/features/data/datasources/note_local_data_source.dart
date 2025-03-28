@@ -25,6 +25,36 @@ class NoteLocalDataSourceImpl implements NoteLocalDataSource {
     return _database!;
   }
 
+  Future<void> _createDb(Database db, int version) async {
+    print('Creating transactions table');
+    await db.execute('''
+    CREATE TABLE transactions(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL,
+      date TEXT NOT NULL,
+      is_paid INTEGER NOT NULL,
+        INTEGER NOT NULL DEFAULT 0,
+      due_date TEXT,
+      notes TEXT
+    )
+  ''');
+    print('Transactions table created successfully');
+  }
+
+  // For existing databases, you'll need to add a migration
+  Future<void> _upgradeDb(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Add the type column to the existing table
+      await db.execute(
+        'ALTER TABLE transactions ADD COLUMN type INTEGER NOT NULL DEFAULT 0',
+      );
+      print('Added type column to transactions table');
+    }
+  }
+
+  // Then update the _initDatabase method to include onUpgrade
   Future<Database> _initDatabase() async {
     try {
       final Directory documentsDirectory =
@@ -38,33 +68,25 @@ class NoteLocalDataSourceImpl implements NoteLocalDataSource {
         // Use FFI for desktop platforms
         return await databaseFactoryFfi.openDatabase(
           path,
-          options: OpenDatabaseOptions(version: 1, onCreate: _createDb),
+          options: OpenDatabaseOptions(
+            version: 2, // Increment version number
+            onCreate: _createDb,
+            onUpgrade: _upgradeDb, // Add upgrade function
+          ),
         );
       } else {
         // Use regular sqflite for mobile platforms
-        return await openDatabase(path, version: 1, onCreate: _createDb);
+        return await openDatabase(
+          path,
+          version: 2, // Increment version number
+          onCreate: _createDb,
+          onUpgrade: _upgradeDb, // Add upgrade function
+        );
       }
     } catch (e) {
       print('Database initialization error: $e');
       rethrow;
     }
-  }
-
-  Future<void> _createDb(Database db, int version) async {
-    print('Creating transactions table');
-    await db.execute('''
-      CREATE TABLE transactions(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        amount REAL NOT NULL,
-        currency TEXT NOT NULL,
-        date TEXT NOT NULL,
-        is_paid INTEGER NOT NULL,
-        due_date TEXT,
-        notes TEXT
-      )
-    ''');
-    print('Transactions table created successfully');
   }
 
   @override

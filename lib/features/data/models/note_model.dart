@@ -8,6 +8,7 @@ class TransactionModel extends Transaction {
     required String currency,
     required DateTime date,
     required bool isPaid,
+    required TransactionType type,
     DateTime? dueDate,
     String? notes,
   }) : super(
@@ -17,6 +18,7 @@ class TransactionModel extends Transaction {
          currency: currency,
          date: date,
          isPaid: isPaid,
+         type: type,
          dueDate: dueDate,
          notes: notes,
        );
@@ -29,6 +31,7 @@ class TransactionModel extends Transaction {
       currency: transaction.currency,
       date: transaction.date,
       isPaid: transaction.isPaid,
+      type: transaction.type,
       dueDate: transaction.dueDate,
       notes: transaction.notes,
     );
@@ -42,6 +45,7 @@ class TransactionModel extends Transaction {
       currency: map['currency'],
       date: DateTime.parse(map['date']),
       isPaid: map['is_paid'] == 1,
+      type: TransactionType.values[map['type'] ?? 0],
       dueDate: map['due_date'] != null ? DateTime.parse(map['due_date']) : null,
       notes: map['notes'],
     );
@@ -55,6 +59,7 @@ class TransactionModel extends Transaction {
       'currency': currency,
       'date': date.toIso8601String(),
       'is_paid': isPaid ? 1 : 0,
+      'type': type.index,
       'due_date': dueDate?.toIso8601String(),
       'notes': notes,
     };

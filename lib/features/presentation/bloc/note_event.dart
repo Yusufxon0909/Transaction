@@ -5,7 +5,7 @@ abstract class TransactionEvent extends Equatable {
   const TransactionEvent();
 
   @override
-  List<Object?> get props => [];
+  List get props => [];
 }
 
 class GetAllTransactionsEvent extends TransactionEvent {}
@@ -16,6 +16,7 @@ class AddTransactionEvent extends TransactionEvent {
   final String currency;
   final DateTime date;
   final bool isPaid;
+  final TransactionType type;
   final DateTime? dueDate;
   final String? notes;
 
@@ -25,17 +26,19 @@ class AddTransactionEvent extends TransactionEvent {
     required this.currency,
     required this.date,
     required this.isPaid,
+    required this.type,
     this.dueDate,
     this.notes,
   });
 
   @override
-  List<Object?> get props => [
+  List get props => [
     title,
     amount,
     currency,
     date,
     isPaid,
+    type,
     dueDate,
     notes,
   ];
@@ -47,7 +50,7 @@ class UpdateTransactionEvent extends TransactionEvent {
   const UpdateTransactionEvent({required this.transaction});
 
   @override
-  List<Object?> get props => [transaction];
+  List get props => [transaction];
 }
 
 class DeleteTransactionEvent extends TransactionEvent {
@@ -56,5 +59,5 @@ class DeleteTransactionEvent extends TransactionEvent {
   const DeleteTransactionEvent({required this.id});
 
   @override
-  List<Object?> get props => [id];
+  List get props => [id];
 }

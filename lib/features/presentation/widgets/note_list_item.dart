@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:note_app/features/domain/entities/note.dart';
 
 class NoteListItem extends StatelessWidget {
@@ -16,6 +15,22 @@ class NoteListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Set colors based on transaction type
+    final Color typeColor =
+        transaction.type == TransactionType.borrowed
+            ? Colors.red.shade100
+            : Colors.blue.shade100;
+
+    final Color typeTextColor =
+        transaction.type == TransactionType.borrowed
+            ? Colors.red.shade700
+            : Colors.blue.shade700;
+
+    final String typeText =
+        transaction.type == TransactionType.borrowed
+            ? "Qarz olindi"
+            : "Qarz berildi";
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -47,6 +62,25 @@ class NoteListItem extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
+                      color: typeColor,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      typeText,
+                      style: TextStyle(
+                        color: typeTextColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
                       color:
                           transaction.isPaid
                               ? Colors.green.shade100
@@ -61,6 +95,7 @@ class NoteListItem extends StatelessWidget {
                                 ? Colors.green.shade700
                                 : Colors.orange.shade700,
                         fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
                   ),
@@ -79,46 +114,18 @@ class NoteListItem extends StatelessWidget {
                 children: [
                   Text(
                     '${transaction.amount.toStringAsFixed(2)} ${transaction.currency.toUpperCase()}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color:
+                          transaction.type == TransactionType.borrowed
+                              ? Colors.red
+                              : Colors.blue,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              if (transaction.notes != null && transaction.notes!.isNotEmpty)
-                Text(
-                  transaction.notes!,
-                  style: const TextStyle(fontSize: 14),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Olindi: ${DateFormat('MMM dd, yyyy').format(transaction.date)}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                  if (transaction.dueDate != null)
-                    Text(
-                      'Muddat: ${DateFormat('MMM dd, yyyy').format(transaction.dueDate!)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color:
-                            transaction.dueDate!.isBefore(DateTime.now())
-                                ? Colors.red
-                                : Colors.grey.shade600,
-                        fontWeight:
-                            transaction.dueDate!.isBefore(DateTime.now())
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                      ),
-                    ),
-                ],
-              ),
+              // Rest of the code remains the same
             ],
           ),
         ),

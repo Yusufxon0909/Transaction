@@ -23,13 +23,14 @@ class _NoteFormState extends State<NoteForm> {
   bool _isPaid = false;
   DateTime _date = DateTime.now();
   DateTime? _dueDate;
+  TransactionType _transactionType = TransactionType.borrowed;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.note?.title ?? '');
     _amountController = TextEditingController(
-      text: widget.note?.amount.toString() ?? '',
+      text: widget.note?.amount != null ? widget.note!.amount.toString() : '',
     );
     _notesController = TextEditingController(text: widget.note?.notes ?? '');
 
@@ -38,6 +39,7 @@ class _NoteFormState extends State<NoteForm> {
       _isPaid = widget.note!.isPaid;
       _date = widget.note!.date;
       _dueDate = widget.note!.dueDate;
+      _transactionType = widget.note!.type;
     }
   }
 
@@ -57,11 +59,50 @@ class _NoteFormState extends State<NoteForm> {
         key: _formKey,
         child: ListView(
           children: [
+            // Transaction Type Selection
+            Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<TransactionType>(
+                    title: const Text('Qarz olish'),
+                    //   subtitle: const Text('Pulni sizga berishgan'),
+                    value: TransactionType.borrowed,
+                    groupValue: _transactionType,
+                    onChanged: (TransactionType? value) {
+                      if (value != null) {
+                        setState(() {
+                          _transactionType = value;
+                        });
+                      }
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: RadioListTile<TransactionType>(
+                    title: const Text('Qarz berish'),
+                    // subtitle: const Text('Siz pulni bergansiz'),
+                    value: TransactionType.lent,
+                    groupValue: _transactionType,
+                    onChanged: (TransactionType? value) {
+                      if (value != null) {
+                        setState(() {
+                          _transactionType = value;
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Kimdan',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText:
+                    _transactionType == TransactionType.borrowed
+                        ? 'Kimdan'
+                        : 'Kimga',
+                border: const OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
@@ -74,27 +115,28 @@ class _NoteFormState extends State<NoteForm> {
             Row(
               children: [
                 Expanded(
-                  flex: 2,
+                  flex: 7,
                   child: TextFormField(
                     controller: _amountController,
+                    keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Miqdor',
+                      labelText: 'Miqdori',
                       border: OutlineInputBorder(),
                     ),
-                    keyboardType: TextInputType.number,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Iltimos miqdorni kiriting';
+                        return 'Iltimos maydonni toldiring';
                       }
                       if (double.tryParse(value) == null) {
-                        return 'Please enter a valid number';
+                        return 'Raqam kiriting';
                       }
                       return null;
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 Expanded(
+                  flex: 3,
                   child: DropdownButtonFormField<String>(
                     value: _currency,
                     decoration: const InputDecoration(
@@ -102,13 +144,16 @@ class _NoteFormState extends State<NoteForm> {
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'som', child: Text('Som')),
+                      DropdownMenuItem(value: 'som', child: Text('SOM')),
                       DropdownMenuItem(value: 'usd', child: Text('USD')),
+                      DropdownMenuItem(value: 'eur', child: Text('EUR')),
                     ],
                     onChanged: (value) {
-                      setState(() {
-                        _currency = value!;
-                      });
+                      if (value != null) {
+                        setState(() {
+                          _currency = value;
+                        });
+                      }
                     },
                   ),
                 ),
@@ -118,59 +163,86 @@ class _NoteFormState extends State<NoteForm> {
             Row(
               children: [
                 Expanded(
-                  child: ListTile(
-                    title: const Text('Olingan vaqt'),
-                    subtitle: Text(DateFormat('MMM dd, yyyy').format(_date)),
-                    trailing: const Icon(Icons.calendar_today),
+                  child: InkWell(
                     onTap: () async {
-                      final selectedDate = await showDatePicker(
+                      final DateTime? picked = await showDatePicker(
                         context: context,
                         initialDate: _date,
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2030),
                       );
-                      if (selectedDate != null) {
+                      if (picked != null && picked != _date) {
                         setState(() {
-                          _date = selectedDate;
+                          _date = picked;
                         });
                       }
                     },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Sana',
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(DateFormat('dd/MM/yyyy').format(_date)),
+                          const Icon(Icons.calendar_today),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: InkWell(
+                    onTap:
+                        _isPaid
+                            ? null
+                            : () async {
+                              final DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: _dueDate ?? DateTime.now(),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2030),
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  _dueDate = picked;
+                                });
+                              }
+                            },
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Qaytarish sanasi',
+                        border: const OutlineInputBorder(),
+                        enabled: !_isPaid,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _dueDate == null
+                                ? 'Tanlang'
+                                : DateFormat('dd/MM/yyyy').format(_dueDate!),
+                          ),
+                          const Icon(Icons.calendar_today),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-
-            if (!_isPaid) ...[
-              const SizedBox(height: 8),
-              ListTile(
-                title: const Text('Muddat'),
-                subtitle:
-                    _dueDate != null
-                        ? Text(DateFormat('MMM dd, yyyy').format(_dueDate!))
-                        : const Text('Not set'),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final selectedDate = await showDatePicker(
-                    context: context,
-                    initialDate:
-                        _dueDate ?? DateTime.now().add(const Duration(days: 7)),
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2030),
-                  );
-                  if (selectedDate != null) {
-                    setState(() {
-                      _dueDate = selectedDate;
-                    });
-                  }
-                },
-              ),
-            ],
-            CheckboxListTile(
-              title: const Text("To'landi"),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Toʻlangan'),
               value: _isPaid,
-              onChanged: (value) {
+              onChanged: (bool value) {
                 setState(() {
-                  _isPaid = value!;
+                  _isPaid = value;
+                  if (_isPaid) {
+                    _dueDate = null;
+                  }
                 });
               },
             ),
@@ -178,20 +250,18 @@ class _NoteFormState extends State<NoteForm> {
             TextFormField(
               controller: _notesController,
               decoration: const InputDecoration(
-                labelText: 'Eslatma',
+                labelText: 'Eslatmalar',
                 border: OutlineInputBorder(),
-                alignLabelWithHint: true,
               ),
               maxLines: 3,
             ),
-
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
                 onPressed: _saveTransaction,
-                child: Text(widget.note == null ? 'Qoshish' : 'Yanqilash'),
+                child: Text(widget.note == null ? 'Qoshish' : 'Yangilash'),
               ),
             ),
           ],
@@ -211,6 +281,7 @@ class _NoteFormState extends State<NoteForm> {
             currency: _currency,
             date: _date,
             isPaid: _isPaid,
+            type: _transactionType,
             dueDate: _isPaid ? null : _dueDate,
             notes: _notesController.text.isEmpty ? null : _notesController.text,
           ),
@@ -226,6 +297,7 @@ class _NoteFormState extends State<NoteForm> {
               currency: _currency,
               date: _date,
               isPaid: _isPaid,
+              type: _transactionType,
               dueDate: _isPaid ? null : _dueDate,
               notes:
                   _notesController.text.isEmpty ? null : _notesController.text,

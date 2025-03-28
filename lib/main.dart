@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
         themeMode: ThemeMode.system,
-        home: const NoteListPage(),
+        home: const TransactionListPage(),
       ),
     );
   }

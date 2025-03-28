@@ -55,11 +55,11 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       currency: event.currency,
       date: event.date,
       isPaid: event.isPaid,
+      type: event.type,
       dueDate: event.dueDate,
       notes: event.notes,
     );
 
-    print('Adding transaction: ${transaction.title}');
     final result = await addTransaction(transaction);
 
     result.fold(
@@ -69,7 +69,6 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
         ),
       ),
       (_) {
-        print('Transaction added successfully');
         add(GetAllTransactionsEvent());
         emit(
           const TransactionOperationSuccess(

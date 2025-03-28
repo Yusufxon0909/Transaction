@@ -1,4 +1,3 @@
-// lib/presentation/bloc/transaction_state.dart
 import 'package:equatable/equatable.dart';
 import 'package:note_app/features/domain/entities/note.dart';
 

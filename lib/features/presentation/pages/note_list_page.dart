@@ -7,14 +7,16 @@ import 'package:note_app/features/presentation/bloc/note_state.dart';
 import 'package:note_app/features/presentation/pages/note_detail_page.dart';
 import 'package:note_app/features/presentation/widgets/note_list_item.dart';
 
-class NoteListPage extends StatefulWidget {
-  const NoteListPage({Key? key}) : super(key: key);
+class TransactionListPage extends StatefulWidget {
+  const TransactionListPage({Key? key}) : super(key: key);
 
   @override
-  State<NoteListPage> createState() => _NoteListPageState();
+  State<TransactionListPage> createState() => _TransactionListPageState();
 }
 
-class _NoteListPageState extends State<NoteListPage> {
+class _TransactionListPageState extends State<TransactionListPage> {
+  TransactionFilter _currentFilter = TransactionFilter.all;
+
   @override
   void initState() {
     super.initState();
@@ -26,43 +28,53 @@ class _NoteListPageState extends State<NoteListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Qarzlar'),
+        title: const Text('Mening qarzlarim'),
         elevation: 0,
         actions: [
-          // Filter button - can be implemented later
-          IconButton(
+          // Filter dropdown
+          PopupMenuButton<TransactionFilter>(
             icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // Implement filtering functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Filterlash tez orada qoshiladi!'),
-                ),
-              );
+            onSelected: (TransactionFilter filter) {
+              setState(() {
+                _currentFilter = filter;
+              });
             },
+            itemBuilder:
+                (BuildContext context) => <PopupMenuEntry<TransactionFilter>>[
+                  const PopupMenuItem<TransactionFilter>(
+                    value: TransactionFilter.all,
+                    child: Text('Hammasi'),
+                  ),
+                  const PopupMenuItem<TransactionFilter>(
+                    value: TransactionFilter.borrowed,
+                    child: Text('Qarz olingan'),
+                  ),
+                  const PopupMenuItem<TransactionFilter>(
+                    value: TransactionFilter.lent,
+                    child: Text('Qarz berilgan'),
+                  ),
+                  const PopupMenuItem<TransactionFilter>(
+                    value: TransactionFilter.unpaid,
+                    child: Text("To'lanmagan"),
+                  ),
+                  const PopupMenuItem<TransactionFilter>(
+                    value: TransactionFilter.paid,
+                    child: Text("To'langan"),
+                  ),
+                ],
           ),
         ],
       ),
       body: BlocConsumer<TransactionBloc, TransactionState>(
         listener: (context, state) {
-          if (state is TransactionOperationSuccess) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
-          } else if (state is TransactionError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
+          // Add your listener code here
         },
         builder: (context, state) {
           if (state is TransactionLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is TransactionsLoaded) {
-            final transactions = state.transactions;
+            // Filter transactions based on selected filter
+            final transactions = _filterTransactions(state.transactions);
 
             if (transactions.isEmpty) {
               return _buildEmptyState();
@@ -70,25 +82,7 @@ class _NoteListPageState extends State<NoteListPage> {
 
             return _buildTransactionList(transactions);
           } else if (state is TransactionError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(state.message),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      context.read<TransactionBloc>().add(
-                        GetAllTransactionsEvent(),
-                      );
-                    },
-                    child: const Text('Try Again'),
-                  ),
-                ],
-              ),
-            );
+            return Center(child: Text(state.message));
           }
 
           // Initial or unknown state
@@ -97,18 +91,35 @@ class _NoteListPageState extends State<NoteListPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.of(context)
-              .push(
-                MaterialPageRoute(builder: (context) => const NoteDetailPage()),
-              )
-              .then((_) {
-                // Refresh the list when returning from the detail page
-                context.read<TransactionBloc>().add(GetAllTransactionsEvent());
-              });
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const NoteDetailPage()),
+          );
         },
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  List<Transaction> _filterTransactions(List<Transaction> transactions) {
+    switch (_currentFilter) {
+      case TransactionFilter.borrowed:
+        return transactions
+            .where((tx) => tx.type == TransactionType.borrowed)
+            .toList();
+      case TransactionFilter.lent:
+        return transactions
+            .where((tx) => tx.type == TransactionType.lent)
+            .toList();
+      case TransactionFilter.unpaid:
+        return transactions.where((tx) => !tx.isPaid).toList();
+      case TransactionFilter.paid:
+        return transactions.where((tx) => tx.isPaid).toList();
+      case TransactionFilter.all:
+      // ignore: unreachable_switch_default
+      default:
+        return transactions;
+    }
   }
 
   Widget _buildEmptyState() {
@@ -116,25 +127,11 @@ class _NoteListPageState extends State<NoteListPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 72,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.note_add, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
-            'No transactions yet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add your first transaction by tapping the + button',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-            textAlign: TextAlign.center,
+            'Hozircha qarzlar yoq',
+            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
           ),
         ],
       ),
@@ -143,65 +140,29 @@ class _NoteListPageState extends State<NoteListPage> {
 
   Widget _buildTransactionList(List<Transaction> transactions) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       itemCount: transactions.length,
       itemBuilder: (context, index) {
         final transaction = transactions[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: NoteListItem(
-            transaction: transaction,
-            onTap: () {
-              Navigator.of(context)
-                  .push(
-                    MaterialPageRoute(
-                      builder: (context) => NoteDetailPage(note: transaction),
-                    ),
-                  )
-                  .then((_) {
-                    // Refresh the list when returning from the detail page
-                    context.read<TransactionBloc>().add(
-                      GetAllTransactionsEvent(),
-                    );
-                  });
-            },
-            onDelete: () {
-              _showDeleteConfirmation(context, transaction);
-            },
-          ),
+        return NoteListItem(
+          transaction: transaction,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => NoteDetailPage(note: transaction),
+              ),
+            );
+          },
+          onDelete: () {
+            context.read<TransactionBloc>().add(
+              DeleteTransactionEvent(id: transaction.id!),
+            );
+          },
         );
       },
     );
   }
-
-  void _showDeleteConfirmation(BuildContext context, Transaction transaction) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Delete Transaction'),
-            content: Text(
-              'Are you sure you want to delete "${transaction.title}"?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('CANCEL'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.read<TransactionBloc>().add(
-                    DeleteTransactionEvent(id: transaction.id!),
-                  );
-                },
-                child: const Text(
-                  'DELETE',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
-          ),
-    );
-  }
 }
+
+enum TransactionFilter { all, borrowed, lent, paid, unpaid }
